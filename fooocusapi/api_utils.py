@@ -16,7 +16,11 @@ from modules import flags
 from modules import config
 from modules.sdxl_styles import legal_style_names
 
+
 api_key_header = APIKeyHeader(name="X-API-KEY", auto_error=False)
+
+
+
 
 def api_key_auth(apikey: str = Security(api_key_header)):
     if args.apikey is None:
@@ -89,6 +93,11 @@ def req_to_params(req: Text2ImgRequest) -> ImageGenerationParams:
             'image': input_image,
             'mask': input_mask
         }
+    
+
+        
+
+
 
     image_prompts = []
     if isinstance(req, ImgPromptRequest) or isinstance(req, ImgPromptRequestJson) or isinstance(req, Text2ImgRequestWithPrompt) or isinstance(req, ImgUpscaleOrVaryRequestJson) or isinstance(req, ImgInpaintOrOutpaintRequestJson):

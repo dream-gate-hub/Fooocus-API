@@ -127,6 +127,9 @@ class Text2ImgRequest(BaseModel):
     async_process: bool = Field(default=False, description="Set to true will run async and return job info for retrieve generataion result later")
     webhook_url: str | None = Field(default='', description="Optional URL for a webhook callback. If provided, the system will send a POST request to this URL upon task completion or failure."
                                                               " This allows for asynchronous notification of task status.")
+class Text2ImgAndUpscaleRequest(Text2ImgRequest):
+    uov_method: UpscaleOrVaryMethod
+    upscale_value: float | None =None
 
 def style_selection_parser(style_selections: str) -> List[str]:
     style_selection_arr: List[str] = []
@@ -197,7 +200,7 @@ class ImgUpscaleOrVaryRequest(Text2ImgRequest):
     upscale_value: float | None
 
     @classmethod
-    def as_form(cls, input_image: UploadFile = Form(description="Init image for upsacale or outpaint"),
+    def as_form(cls, input_image: UploadFile= Form(description="Init image for upsacale or outpaint"),
                 uov_method: UpscaleOrVaryMethod = Form(),
                 upscale_value: float | None = Form(None, description="Upscale custom value, None for default value", ge=1.0, le=5.0),
                 prompt: str = Form(''),

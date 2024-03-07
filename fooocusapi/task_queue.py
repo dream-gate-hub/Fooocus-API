@@ -19,6 +19,7 @@ class TaskType(str, Enum):
 
 
 class QueueTask(object):
+    step2task: bool = False
     job_id: str
     type: TaskType
     req_param: ImageGenerationParams
@@ -34,8 +35,9 @@ class QueueTask(object):
     error_message: str | None = None
     webhook_url: str | None = None  # attribute for individual webhook_url
 
-    def __init__(self, job_id: str, type: TaskType, req_param: ImageGenerationParams, in_queue_millis: int,
-                 webhook_url: str | None = None):
+    def __init__(self,  job_id: str, type: TaskType, req_param: ImageGenerationParams, in_queue_millis: int,
+                 webhook_url: str | None = None,step2task: bool =False):
+        self.step2task = step2task
         self.job_id = job_id
         self.type = type
         self.req_param = req_param
@@ -73,7 +75,7 @@ class TaskQueue(object):
         self.webhook_url = webhook_url
         self.persistent = False if persistent is None else persistent
 
-    def add_task(self, type: TaskType, req_param: ImageGenerationParams, webhook_url: str | None = None) -> QueueTask | None:
+    def add_task(self, type: TaskType, req_param: ImageGenerationParams, webhook_url: str | None = None, priority: bool =False,step2req: bool =False) -> QueueTask | None:
         """
         Create and add task to queue
         :returns: The created task's job_id, or None if reach the queue size limit
@@ -84,8 +86,11 @@ class TaskQueue(object):
         job_id = str(uuid.uuid4())
         task = QueueTask(job_id=job_id, type=type, req_param=req_param,
                          in_queue_millis=int(round(time.time() * 1000)),
-                         webhook_url=webhook_url)
-        self.queue.append(task)
+                         webhook_url=webhook_url,step2task=step2req)
+        if priority:
+            self.queue.insert(0,task)
+        else:
+            self.queue.append(task)
         self.last_job_id = job_id
         return task
 

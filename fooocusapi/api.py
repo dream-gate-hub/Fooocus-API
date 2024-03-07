@@ -18,6 +18,53 @@ from fooocusapi.img_utils import base64_to_stream, read_input_image
 
 from modules.util import HWC3
 
+
+import torch
+from PIL import Image
+from transformers import CLIPSegProcessor, CLIPSegForImageSegmentation
+from scipy.ndimage import gaussian_filter
+import matplotlib.cm as cm
+import numpy as np
+import cv2
+import os
+import time
+from typing import Dict
+from io import BytesIO
+import base64
+
+# Help Function for head detection
+def tensor_to_numpy(tensor: torch.Tensor) -> np.ndarray:
+    """Convert a tensor to a numpy array and scale its values to 0-255."""
+    array = tensor.numpy().squeeze()
+    return (array * 255).astype(np.uint8)
+
+def numpy_to_tensor(array: np.ndarray) -> torch.Tensor:
+    """Convert a numpy array to a tensor and scale its values from 0-255 to 0-1."""
+    array = array.astype(np.float32) / 255.0
+    return torch.from_numpy(array)[None,]
+
+def apply_colormap(mask: torch.Tensor, colormap) -> np.ndarray:
+    """Apply a colormap to a tensor and convert it to a numpy array."""
+    colored_mask = colormap(mask.numpy())[:, :, :3]
+    return (colored_mask * 255).astype(np.uint8)
+
+def resize_image(image: np.ndarray, dimensions: Tuple[int, int]) -> np.ndarray:
+    """Resize an image to the given dimensions using linear interpolation."""
+    return cv2.resize(image, dimensions, interpolation=cv2.INTER_LINEAR)
+
+def overlay_image(background: np.ndarray, foreground: np.ndarray, alpha: float) -> np.ndarray:
+    """Overlay the foreground image onto the background with a given opacity (alpha)."""
+    return cv2.addWeighted(background, 1 - alpha, foreground, alpha, 0)
+
+def dilate_mask(mask: torch.Tensor, dilation_factor: float) -> torch.Tensor:
+    """Dilate a mask using a square kernel with a given dilation factor."""
+    kernel_size = int(dilation_factor * 2) + 1
+    kernel = np.ones((kernel_size, kernel_size), np.uint8)
+    mask_dilated = cv2.dilate(mask.numpy(), kernel, iterations=1)
+    return torch.from_numpy(mask_dilated)
+
+#load model for head detection
+
 app = FastAPI()
 
 app.add_middleware(
@@ -68,7 +115,8 @@ def get_task_type(req: Text2ImgRequest) -> TaskType:
         return TaskType.text_2_img
 
 
-def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobResponse | List[GeneratedImageResult]:
+def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2req: bool = False) -> Response | AsyncJobResponse | List[GeneratedImageResult]:  
+    #priority =True :the task will be done first   step2req =True : for 2 step task's first step used for waiting 
     if accept == 'image/png':
         streaming_output = True
         # image_number auto set to 1 in streaming mode
@@ -78,7 +126,7 @@ def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobRespons
 
     task_type = get_task_type(req)
     params = req_to_params(req)
-    async_task = worker_queue.add_task(task_type, params, req.webhook_url)
+    async_task = worker_queue.add_task(task_type, params, req.webhook_url, priority,step2req)
 
     if async_task is None:
         # add to worker queue failed
@@ -114,6 +162,7 @@ def stop_worker():
     process_top()
 
 
+
 @app.get("/")
 def home():
     return Response(content='Swagger-UI to: <a href="/docs">/docs</a>', media_type="text/html")
@@ -122,6 +171,31 @@ def home():
 @app.get("/ping", description="Returns a simple 'pong' response")
 def ping():
     return Response(content='pong', media_type="text/html")
+
+@secure_router.post("/v1/generation/text-to-image-up-scale",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def text2imgAndUpscale_generation(t2ireq: Text2ImgRequest,upscalereq: ImgUpscaleOrVaryRequestJson , accept: str = Header(None),
+                        accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    if accept_query is not None and len(accept_query) > 0:
+        accept = accept_query
+    t2ireq.require_base64=True
+    step1 = call_worker(t2ireq, accept,step2req=True)
+    upscalereq.input_image=step1[0].base64
+    
+    upscalereq.input_image = base64_to_stream(upscalereq.input_image)
+
+    default_image_promt = ImagePrompt(cn_img=None)
+    image_prompts_files: List[ImagePrompt] = []
+    for img_prompt in upscalereq.image_prompts:
+        img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
+        image = ImagePrompt(cn_img=img_prompt.cn_img,
+                            cn_stop=img_prompt.cn_stop,
+                            cn_weight=img_prompt.cn_weight,
+                            cn_type=img_prompt.cn_type)
+        image_prompts_files.append(image)
+    while len(image_prompts_files) <= 4:
+        image_prompts_files.append(default_image_promt)
+    upscalereq.image_prompts = image_prompts_files
+    return call_worker(upscalereq, accept,priority=True)
 
 
 @secure_router.post("/v1/generation/text-to-image", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
@@ -341,6 +415,76 @@ def refresh_models():
 def all_styles():
     from modules.sdxl_styles import legal_style_names
     return legal_style_names
+
+
+@secure_router.post("/GenerateHeadMask",response_model=dict,description="the dir of the headmask")
+def GenerateHeadMask(image: UploadFile, threshold = 0.1, blur = 1.0, dilation_factor = 1):
+
+    prompt = 'head'
+    #threshold=0.1
+    #blur=1.0
+    #dilation_factor=1
+
+    # Decode the base64 image
+    image_data = read_input_image(image)
+    image_np = np.array(image_data, dtype=np.uint8)
+    
+    i = Image.fromarray(image_np,mode="RGB")
+    input_prc = processor(text=prompt, images=i, padding="max_length", return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**input_prc)
+    tensor = torch.sigmoid(outputs[0])
+
+    # Apply a threshold to the original tensor to cut off low values
+    tensor_thresholded = torch.where(tensor > threshold, tensor, torch.tensor(0, dtype=torch.float))
+
+    # Apply Gaussian blur to the thresholded tensor
+    tensor_smoothed = gaussian_filter(tensor_thresholded.numpy(), sigma=blur)
+    tensor_smoothed = torch.from_numpy(tensor_smoothed)
+
+    # Normalize the smoothed tensor to [0, 1]
+    mask_normalized = (tensor_smoothed - tensor_smoothed.min()) / (tensor_smoothed.max() - tensor_smoothed.min())
+
+    # Dilate the normalized mask
+    mask_dilated = dilate_mask(mask_normalized, dilation_factor)
+
+    # Convert the mask to a heatmap and a binary mask
+    binary_mask = apply_colormap(mask_dilated, cm.Greys_r)
+
+    # Overlay the heatmap and binary mask on the original image
+    dimensions = (image_np.shape[1], image_np.shape[0])
+    binary_mask_resized = resize_image(binary_mask, dimensions)
+
+    grey = cv2.cvtColor(binary_mask_resized,cv2.COLOR_BGR2GRAY)
+    _, thresh = cv2.threshold(grey, 20, 255, cv2.THRESH_BINARY)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    bounding_boxes = []
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        # Increase the bounding box margin by 100px, ensuring it doesn't exceed image dimensions
+        x = max(x - 100, 0)
+        y = max(y - 100, 0)
+        w = min(w + 200, image_np.shape[1] - x)
+        h = min(h + 200, image_np.shape[0] - y)
+        bounding_boxes.append({'x': x, 'y': y, 'w': w, 'h': h})
+
+    # Save and encode the binary mask to base64 for output
+    timestamp = int(time.time())
+    buffered = BytesIO()
+    Image.fromarray(binary_mask_resized).save(f'./imgs/mask_{timestamp}.png')
+    Image.fromarray(binary_mask_resized).save(buffered, format="PNG")
+    buffered.seek(0)
+    img_base64 = base64.b64encode(buffered.getvalue()).decode()
+    
+    ans = {"image_base64": img_base64, 'bounding_boxes': bounding_boxes}
+    return ans
+
+
+
+
+processor = CLIPSegProcessor.from_pretrained("/root/autodl-tmp/Fooocus-API/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+model = CLIPSegForImageSegmentation.from_pretrained("/root/autodl-tmp/Fooocus-API/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+
 
 
 app.mount("/files", StaticFiles(directory=file_utils.output_dir), name="files")

@@ -11,6 +11,7 @@ from fooocusapi.file_utils import save_output_file
 from fooocusapi.parameters import GenerationFinishReason, ImageGenerationResult
 from fooocusapi.task_queue import QueueTask, TaskQueue, TaskOutputs
 
+
 worker_queue: TaskQueue = None
 
 def process_top():
@@ -25,12 +26,13 @@ def task_schedule_loop():
         if len(worker_queue.queue) == 0:
             time.sleep(0.05)
             continue
-        
         current_task = worker_queue.queue[0]
         if current_task.start_millis == 0:
             process_generate(current_task)
+            if current_task.step2task:
+                time.sleep(1)                   #wait for step 2 upscale task
 
-
+            
 @torch.no_grad()
 @torch.inference_mode()
 def blocking_get_task_result(job_id: str) -> List[ImageGenerationResult]:
@@ -179,6 +181,7 @@ def process_generate(async_task: QueueTask):
         base_model_additional_loras = []
         raw_style_selections = copy.deepcopy(style_selections)
         uov_method = uov_method.lower()
+
 
         if fooocus_expansion in style_selections:
             use_expansion = True

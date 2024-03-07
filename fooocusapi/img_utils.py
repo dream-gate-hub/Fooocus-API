@@ -5,7 +5,7 @@ import numpy as np
 from io import BytesIO
 from fastapi import UploadFile
 from PIL import Image
-
+import os
 
 def narray_to_base64img(narray: np.ndarray) -> str:
     if narray is None:
@@ -41,6 +41,8 @@ def read_input_image(input_image: UploadFile | None) -> np.ndarray | None:
 def base64_to_stream(image: str) -> UploadFile | None:
     if image == '':
         return None
+    if image.startswith('/root'):
+        return get_image_local(dir=image)
     if image.startswith('http'):
         return get_check_image(url=image)
     if image.startswith('data:image'):
@@ -68,3 +70,17 @@ def get_check_image(url: str) -> UploadFile | None:
     byte_stream.write(binary_image)
     byte_stream.seek(0)
     return UploadFile(file=byte_stream)
+
+def get_image_local(dir: str) -> UploadFile | None:
+    if not os.path.exists(dir):
+        return None
+    try:
+        with Image.open(dir) as img:
+            byte_stream = BytesIO()
+            img.save(byte_stream,format=img.format)
+            byte_stream.seek(0)
+            return UploadFile(file=byte_stream)
+    except (IOError,SyntaxError) as e:
+        pass
+    return None
+        
