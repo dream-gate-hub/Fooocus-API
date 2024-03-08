@@ -17,7 +17,7 @@ def save_output_file(img: np.ndarray) -> str:
     current_time = datetime.datetime.now()
     date_string = current_time.strftime("%Y-%m-%d")
 
-    filename = os.path.join(date_string, str(uuid.uuid4()) + '.png')
+    filename = os.path.join(date_string, str(uuid.uuid4()) + '.jpg')
     file_path = os.path.join(output_dir, filename)
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -44,7 +44,7 @@ def output_file_to_base64img(filename: str | None) -> str | None:
 
     img = Image.open(file_path)
     output_buffer = BytesIO()
-    img.save(output_buffer, format='PNG')
+    img.save(output_buffer, format='JPEG')
     byte_data = output_buffer.getvalue()
     base64_str = base64.b64encode(byte_data)
     return base64_str
@@ -59,7 +59,7 @@ def output_file_to_bytesimg(filename: str | None) -> bytes | None:
 
     img = Image.open(file_path)
     output_buffer = BytesIO()
-    img.save(output_buffer, format='PNG')
+    img.save(output_buffer, format='JPEG')
     byte_data = output_buffer.getvalue()
     return byte_data
 
