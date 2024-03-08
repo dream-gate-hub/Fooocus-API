@@ -175,6 +175,8 @@ def ping():
 @secure_router.post("/v1/generation/text-to-image-upscale",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
 def text2imgAndUpscale_generation(text_to_image_req: Text2ImgRequest,up_scale_req: ImgUpscaleOrVaryRequestJson , accept: str = Header(None),
                         accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    if up_scale_req.upscale_value<=1:
+        return text2img_generation(req=text_to_image_req,accept=accept,accept_query=accept_query)
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
     text_to_image_req.require_base64=True
@@ -315,7 +317,7 @@ def img_prompt(cn_img1: Optional[UploadFile] = File(None),
 
 
 @secure_router.post("/v2/generation/image-prompt", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
-def img_prompt(req: ImgPromptRequestJson,
+def img_prompt_v2(req: ImgPromptRequestJson,
                accept: str = Header(None),
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     if accept_query is not None and len(accept_query) > 0:
@@ -345,9 +347,11 @@ def img_prompt(req: ImgPromptRequestJson,
 
 
 @secure_router.post("/v2/generation/image-prompt-upscale", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
-def img_prompt(image_prompt_req: ImgPromptRequestJson,up_scale_req: ImgUpscaleOrVaryRequestJson, 
+def img_prompt_upscale(image_prompt_req: ImgPromptRequestJson,up_scale_req: ImgUpscaleOrVaryRequestJson, 
                accept: str = Header(None),
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    if up_scale_req.upscale_value<=1:
+        return img_prompt_v2(req=image_prompt_req,accept=accept,accept_query=accept_query)
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
 
