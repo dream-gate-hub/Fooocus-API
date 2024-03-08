@@ -172,20 +172,20 @@ def home():
 def ping():
     return Response(content='pong', media_type="text/html")
 
-@secure_router.post("/v1/generation/text-to-image_upscale",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
-def text2imgAndUpscale_generation(t2ireq: Text2ImgRequest,upscalereq: ImgUpscaleOrVaryRequestJson , accept: str = Header(None),
+@secure_router.post("/v1/generation/text-to-image-upscale",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def text2imgAndUpscale_generation(text_to_image_req: Text2ImgRequest,up_scale_req: ImgUpscaleOrVaryRequestJson , accept: str = Header(None),
                         accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
-    t2ireq.require_base64=True
-    step1 = call_worker(t2ireq, accept,step2req=True)
-    upscalereq.input_image=step1[0].base64
+    text_to_image_req.require_base64=True
+    step1 = call_worker(text_to_image_req, accept,step2req=True)
+    up_scale_req.input_image=step1[0].base64
     
-    upscalereq.input_image = base64_to_stream(upscalereq.input_image)
+    up_scale_req.input_image = base64_to_stream(up_scale_req.input_image)
 
     default_image_promt = ImagePrompt(cn_img=None)
     image_prompts_files: List[ImagePrompt] = []
-    for img_prompt in upscalereq.image_prompts:
+    for img_prompt in up_scale_req.image_prompts:
         img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
         image = ImagePrompt(cn_img=img_prompt.cn_img,
                             cn_stop=img_prompt.cn_stop,
@@ -194,8 +194,8 @@ def text2imgAndUpscale_generation(t2ireq: Text2ImgRequest,upscalereq: ImgUpscale
         image_prompts_files.append(image)
     while len(image_prompts_files) <= 4:
         image_prompts_files.append(default_image_promt)
-    upscalereq.image_prompts = image_prompts_files
-    return call_worker(upscalereq, accept,priority=True)
+    up_scale_req.image_prompts = image_prompts_files
+    return call_worker(up_scale_req, accept,priority=True)
 
 
 @secure_router.post("/v1/generation/text-to-image", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
@@ -344,8 +344,8 @@ def img_prompt(req: ImgPromptRequestJson,
     return call_worker(req, accept)
 
 
-@secure_router.post("/v2/generation/image-prompt_upscale", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
-def img_prompt(image_prompt_req: ImgPromptRequestJson,upscalereq: ImgUpscaleOrVaryRequestJson, 
+@secure_router.post("/v2/generation/image-prompt-upscale", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def img_prompt(image_prompt_req: ImgPromptRequestJson,up_scale_req: ImgUpscaleOrVaryRequestJson, 
                accept: str = Header(None),
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     if accept_query is not None and len(accept_query) > 0:
@@ -373,13 +373,13 @@ def img_prompt(image_prompt_req: ImgPromptRequestJson,upscalereq: ImgUpscaleOrVa
 
     image_prompt_req.require_base64=True
     step1 = call_worker(image_prompt_req, accept,step2req=True)
-    upscalereq.input_image=step1[0].base64
+    up_scale_req.input_image=step1[0].base64
     
-    upscalereq.input_image = base64_to_stream(upscalereq.input_image)
+    up_scale_req.input_image = base64_to_stream(up_scale_req.input_image)
 
     default_image_promt = ImagePrompt(cn_img=None)
     image_prompts_files: List[ImagePrompt] = []
-    for img_prompt in upscalereq.image_prompts:
+    for img_prompt in up_scale_req.image_prompts:
         img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
         image = ImagePrompt(cn_img=img_prompt.cn_img,
                             cn_stop=img_prompt.cn_stop,
@@ -388,8 +388,8 @@ def img_prompt(image_prompt_req: ImgPromptRequestJson,upscalereq: ImgUpscaleOrVa
         image_prompts_files.append(image)
     while len(image_prompts_files) <= 4:
         image_prompts_files.append(default_image_promt)
-    upscalereq.image_prompts = image_prompts_files
-    return call_worker(upscalereq, accept,priority=True)
+    up_scale_req.image_prompts = image_prompts_files
+    return call_worker(up_scale_req, accept,priority=True)
 
 
 @secure_router.get("/v1/generation/query-job", response_model=AsyncJobResponse, description="Query async generation job")
