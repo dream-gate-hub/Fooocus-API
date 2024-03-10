@@ -521,14 +521,14 @@ def GenerateHeadMask(image: UploadFile, threshold = 0.1, blur = 1.0, dilation_fa
         bounding_boxes.append({'x': x, 'y': y, 'w': w, 'h': h})
 
     # Save and encode the binary mask to base64 for output
-    timestamp = int(time.time())
-    buffered = BytesIO()
-    #Image.fromarray(binary_mask_resized).save(f'./imgs/mask_{timestamp}.png')
-    Image.fromarray(binary_mask_resized).save(buffered, format="PNG")
-    buffered.seek(0)
-    img_base64 = base64.b64encode(buffered.getvalue()).decode()
+    #timestamp = int(time.time())
+    #buffered = BytesIO()
+    #Image.fromarray(binary_mask_resized).save(buffered, format="PNG")
+    #buffered.seek(0)
+    #img_base64 = base64.b64encode(buffered.getvalue()).decode()
     
-    ans = {"image_base64": img_base64, 'bounding_boxes': bounding_boxes}
+    #ans = {"image_base64": img_base64, 'bounding_boxes': bounding_boxes}
+    ans = {'bounding_boxes': bounding_boxes}
     return ans
 
 
