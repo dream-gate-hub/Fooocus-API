@@ -533,9 +533,17 @@ def GenerateHeadMask(image: UploadFile, threshold = 0.1, blur = 1.0, dilation_fa
 
 
 
+# 当前文件的路径
+current_file_path = __file__
+# 当前文件所在的目录
+current_directory = os.path.dirname(current_file_path)
 
-processor = CLIPSegProcessor.from_pretrained("/root/Fooocus-API/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
-model = CLIPSegForImageSegmentation.from_pretrained("/root/Fooocus-API/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+# 当前目录的上一级目录
+parent_directory = os.path.dirname(current_directory)
+
+processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+
 
 
 
