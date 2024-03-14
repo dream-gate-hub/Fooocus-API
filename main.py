@@ -187,11 +187,12 @@ def download_repositories():
         fooocus_repo_url = fooocus_github_repo
     except:
         fooocus_repo_url = fooocus_gitee_repo
+    '''
     fooocus_repo = os.environ.get(
         'FOOOCUS_REPO', fooocus_repo_url)
     git_clone(fooocus_repo, repo_dir(fooocus_name),
               "Fooocus", fooocus_commit_hash)
-
+    '''
 
 def is_installed(package):
     try:
