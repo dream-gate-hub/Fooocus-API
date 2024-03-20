@@ -1,0 +1,3 @@
+[submodule "repositories/Fooocus"]
+	path = repositories/Fooocus
+	url = git@github.com:dream-gate-hub/Fooocus.git
