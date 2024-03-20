@@ -1,0 +1,12 @@
+{
+    "path_checkpoints": "./repositories/Fooocus/models/checkpoints",
+    "path_loras": "./repositories/Fooocus/models/loras",
+    "path_embeddings": "./repositories/Fooocus/models/embeddings",
+    "path_vae_approx": "./repositories/Fooocus/models/vae_approx",
+    "path_upscale_models": "./repositories/Fooocus/models/upscale_models",
+    "path_inpaint": "./repositories/Fooocus/models/inpaint",
+    "path_controlnet": "./repositories/Fooocus/models/controlnet",
+    "path_clip_vision": "./repositories/Fooocus/models/clip_vision",
+    "path_fooocus_expansion": "./repositories/Fooocus/models/prompt_expansion/fooocus_expansion",
+    "path_outputs": "./repositories/Fooocus/outputs"
+}

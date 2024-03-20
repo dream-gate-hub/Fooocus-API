@@ -194,6 +194,7 @@ def download_repositories():
               "Fooocus", fooocus_commit_hash)
     '''
 
+
 def is_installed(package):
     try:
         spec = find_spec(package)
