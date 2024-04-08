@@ -53,3 +53,5 @@ experiment.py
 .cog/
 /presets
 *.db
+
+models/*
