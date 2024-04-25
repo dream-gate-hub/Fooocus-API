@@ -178,7 +178,7 @@ def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int
     req.advanced_params.sampler_name = imageStyle.sampler_name
     req.advanced_params.scheduler_name = imageStyle.scheduler_name
     if upscale:
-        req.advanced_params.adaptive_cfg = int(imageStyle.cfg * 0.6)
+        req.advanced_params.overwrite_step = int(imageStyle.steps * 0.6)
     return req
 
 
