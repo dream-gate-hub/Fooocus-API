@@ -17,7 +17,7 @@ from fooocusapi.models_v2 import *
 from fooocusapi.img_utils import base64_to_stream, read_input_image
 
 from modules.util import HWC3
-
+import random
 
 import torch
 from PIL import Image
@@ -31,6 +31,156 @@ import time
 from typing import Dict
 from io import BytesIO
 import base64
+
+
+##############
+
+negative_prompts = [
+"""
+worst quality, large head, low quality, extra digits, bad eye, EasyNegativeV2, ng_deepnegative_v1_75t,bad hands, bad arms, missing fingers, missing arms, missing hands, missing digit, missing limbs, extra digit, fewer digits, fused hands, poorly drawn hands, poorly drawn hands, three hands, fewer digits, fused fingers, extra fingers, extra limbs, extra arms, malformed limbs, too many fingers, mutated hands, urgly arms, abnormal hands, poorly drawn digit, poorly drawn hands, abnormal digit, one hand with more than five digit, too long digit, boken limb,bad anatomy,text, signature, watermark, username, artist name, stamp, title, subtitle, date, footer, header,multipul angle, two shot, split view, grid view
+""",
+"""
+bad anatomy, bad hands, mutated hand, text, error, missing fingers
+"""
+]
+
+class Image_Style(BaseModel):
+    id: int = 0
+
+class ImageStyle():
+    def __init__(self, model: str, styles: List[str] = ["Fooocus V2", "Fooocus Masterpiece"], sdxl_fast: bool = False, use_default: bool = False, guidance_scale: int = 1, cfg: int = 4, steps: int = 8, sampler_name: str = "dpmpp_sde_gpu", scheduler_name: str = "sgm_uniform", negative_prompt: int = 0):
+        self.model = model  
+        self.styles = styles
+        self.negative_prompt = negative_prompts[negative_prompt]
+        
+        if use_default:
+            if sdxl_fast:
+                self.guidance_scale = 1
+                self.cfg = 4
+                self.steps = 15
+                self.sampler_name = "dpmpp_sde_gpu"
+                self.scheduler_name = "sgm_uniform"
+            else:
+                self.guidance_scale = 4
+                self.cfg = 7
+                self.steps = 30
+                self.sampler_name = "dpmpp_2m_sde_gpu"
+                self.scheduler_name = "karras"
+        else:
+            self.guidance_scale = guidance_scale
+            self.cfg = cfg
+            self.steps = steps
+            self.sampler_name = sampler_name
+            self.scheduler_name = scheduler_name
+
+    """
+    fast
+    ImageStyle("SDXL_Fast/218xl_turbotest.safetensors", sdxl_fast = True),                     
+    ImageStyle("SDXL_Fast/aamXLAnimeMix_v10HalfturboEulera.safetensors", sdxl_fast = True),    
+    ImageStyle("SDXL_Fast/atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"),                    
+    ImageStyle("SDXL_Fast/bluePencilXLLCM_v310Lcm.safetensors", sdxl_fast = True),             
+    ImageStyle("SDXL_Fast/bluePencilXLLCM_v500Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 15, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"),      
+    ImageStyle("SDXL_Fast/breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),                  
+    ImageStyle("SDXL_Fast/dreamshaperXL_alpha2Xl10.safetensors", sdxl_fast = True),            
+    ImageStyle("SDXL_Fast/duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL_Fast/envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL_Fast/envyturboagendaxl01Anime_v11.safetensors", sdxl_fast = True, cfg = 2.5, steps = 8, sampler_name = "dpmpp_2m_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL_Fast/juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL_Fast/level4XL_alphaV02.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL_Fast/odemXL_v2.safetensors", sdxl_fast = True),
+    ImageStyle("SDXL_Fast/osorubeshixlKakkoii_v10.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "euler_ancestral", scheduler_name = "karras"),
+    ImageStyle("SDXL_Fast/reproductionLCM_v2.safetensors", sdxl_fast = True),
+    ImageStyle("SDXL_Fast/vibrantHorizonTurbo_v20.safetensors", sdxl_fast = True, cfg = 3.5, steps = 10, sampler_name = "dpmpp_2m_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL_Fast/vxpXLTURBO_vxpXLV15.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "euler_ancestral", scheduler_name = "karras"),
+
+    ImageStyle("SDXL/7thAnimeXLA_v10.safetensors", use_default=True),
+    ImageStyle("SDXL/afroditexlNudePeople_31.safetensors", use_default=True),
+    ImageStyle("SDXL/copaxTimelessxlSDXL1_v12.safetensors", use_default=True),
+    ImageStyle("SDXL/everclearPNYByZovya_v2VAE.safetensors", use_default=True),
+    ImageStyle("SDXL/fullyREALXL_v90Vividreal.safetensors", cfg = 4, steps = 60, sampler_name = "DPM++ 2M SDE"),
+    ImageStyle("SDXL/iniverseMixXLSFWNSFW_v75Real.safetensors", use_default=True),
+    ImageStyle("SDXL/PVCStyleModelMovable_beta25Realistic.safetensors", use_default=True),
+    ImageStyle("SDXL/tPonynai3_v35.safetensors", use_default=True),
+    ImageStyle("SDXL/zavychromaxl_v60.safetensors", use_default=True),
+
+    ImageStyle("SDXL/holoanimeXL_v27.safetensors", use_default=True),
+    ImageStyle("SDXL/pilgrim2DSDXL_v50.safetensors", use_default=True),
+    ImageStyle("SDXL/raemuXL_v30.safetensors", use_default=True),
+    ImageStyle("SDXL/randommaxxArtMerge_v10.safetensors", use_default=True),
+
+
+    sdxl
+    ImageStyle("SDXL/aamXLAnimeMix_v10.safetensors", use_default=True),
+    ImageStyle("SDXL/animagineXL_v20.safetensors", use_default=True),
+    ImageStyle("SDXL/animagineXLV31_v31.safetensors", guidance_scale = 4, cfg = 7, steps = 30, sampler_name = "euler_ancestral", scheduler_name = "karras"),
+    ImageStyle("SDXL/animaPencilXL_v300.safetensors", use_default=True),
+    ImageStyle("SDXL/animeIllustDiffusion_v08.safetensors", use_default=True),
+    ImageStyle("SDXL/AnythingXL_xl.safetensors", use_default=True),
+    ImageStyle("SDXL/artium_v20.safetensors", use_default=True),
+    ImageStyle("SDXL/bluePencilXL_v401.safetensors", use_default=True),
+    ImageStyle("SDXL/bluePencilXL_v600.safetensors", use_default=True),
+    ImageStyle("SDXL/CHEYENNE_v16.safetensors", use_default=True),
+    ImageStyle("SDXL/counterfeitxl_v25.safetensors", use_default=True),
+    ImageStyle("SDXL/dreamshaperXL_alpha2Xl10.safetensors", use_default=True),
+    ImageStyle("SDXL/hassakuXLSfwNsfw_betaV06.safetensors", use_default=True),
+    ImageStyle("SDXL/himawarimix_xlV6.safetensors", use_default=True),
+    ImageStyle("SDXL/juggernautXL_version6Rundiffusion.safetensors", use_default=True),
+    ImageStyle("SDXL/matrixHentaiPlusXL_v16.safetensors", use_default=True),
+    ImageStyle("SDXL/protovisionXLHighFidelity3D.safetensors", use_default=True),
+    ImageStyle("SDXL/reproductionSDXL_2v12.safetensors", use_default=True),
+    ImageStyle("SDXL/sdvn7Nijistylexl_v1.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlUnstableDiffusers_nihilmania.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlYamersAnime_stageAnima.safetensors", use_default=True),
+    ImageStyle("SDXL/ponyDiffusionV6XL_v6StartWithThisOne.safetensors", use_default=True),
+    ImageStyle("SDXL/starlightXLAnimated_v3.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
+
+    在用
+    ImageStyle("SDXL/AnythingXL_xl.safetensors", use_default=True),
+    ImageStyle("SDXL/animaPencilXL_v300.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlYamersAnime_stageAnima.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL/animagineXL_v20.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
+    ImageStyle("SDXL_Fast/breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
+    ImageStyle("SDXL/sdvn7Nijistylexl_v1.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL/CHEYENNE_v16.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL/ponyDiffusionV6XL_v6StartWithThisOne.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
+    """
+image_styles = [
+
+    ImageStyle("SDXL/animagineXL_v20.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL/AnythingXL_xl.safetensors", use_default=True),
+    ImageStyle("SDXL/sdxlYamersAnime_stageAnima.safetensors", use_default=True),
+    ImageStyle("SDXL/sdvn7Nijistylexl_v1.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
+    ImageStyle("SDXL/sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
+    ImageStyle("SDXL/animaPencilXL_v300.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
+    ImageStyle("SDXL_Fast/juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
+    ImageStyle("SDXL/CHEYENNE_v16.safetensors", use_default=True),
+    ImageStyle("SDXL_Fast/breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
+    
+]
+
+def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
+    req.image_style = id
+    req.base_model_name = imageStyle.model
+    req.negative_prompt = imageStyle.negative_prompt
+    req.guidance_scale = imageStyle.guidance_scale
+    req.style_selections = imageStyle.styles
+    req.advanced_params.adaptive_cfg = imageStyle.cfg   
+    req.advanced_params.overwrite_step = imageStyle.steps
+    req.advanced_params.sampler_name = imageStyle.sampler_name
+    req.advanced_params.scheduler_name = imageStyle.scheduler_name
+    if upscale:
+        req.advanced_params.adaptive_cfg = int(imageStyle.cfg * 0.6)
+    return req
+
 
 # Help Function for head detection
 def tensor_to_numpy(tensor: torch.Tensor) -> np.ndarray:
@@ -123,6 +273,16 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
         req.image_number = 1
     else:
         streaming_output = False
+    """
+    req.base_model_name = "atomixAnimeXL_v10.safetensors"
+    req.advanced_params.overwrite_step = 8
+    req.advanced_params.adaptive_cfg = 2
+    req.guidance_scale = 1
+    req.advanced_params.sampler_name = "dpmpp_sde_gpu"
+    req.advanced_params.scheduler_name = "sgm_uniform"
+    """
+
+    print(f"图片风格：{req.image_style}")
 
     task_type = get_task_type(req)
     params = req_to_params(req)
@@ -155,7 +315,7 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
     if streaming_output:
         return generate_streaming_output(results)
     else:
-        return generate_image_result_output(results, req.require_base64)
+        return generate_image_result_output(results, req.require_base64, req.image_style)
 
 
 def stop_worker():
@@ -173,8 +333,50 @@ def ping():
     return Response(content='pong', media_type="text/html")
 
 @secure_router.post("/v1/generation/text-to-image-upscale",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
-def text2imgAndUpscale_generation(text_to_image_req: Text2ImgRequest,up_scale_req: ImgUpscaleOrVaryRequestJson , accept: str = Header(None),
+def text2imgAndUpscale_generation(text_to_image_req: Text2ImgRequest, up_scale_req: ImgUpscaleOrVaryRequestJson, accept: str = Header(None),
                         accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+
+    #up_scale_req.upscale_value = 1.5
+
+    if up_scale_req.upscale_value<=1:
+        return text2img_generation(req=text_to_image_req,accept=accept,accept_query=accept_query)
+    if accept_query is not None and len(accept_query) > 0:
+        accept = accept_query
+    text_to_image_req.require_base64=True
+    step1 = call_worker(text_to_image_req, accept,step2req=True)
+    up_scale_req.input_image=step1[0].base64
+    
+    up_scale_req.input_image = base64_to_stream(up_scale_req.input_image)
+
+    default_image_promt = ImagePrompt(cn_img=None)
+    image_prompts_files: List[ImagePrompt] = []
+    for img_prompt in up_scale_req.image_prompts:
+        img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
+        image = ImagePrompt(cn_img=img_prompt.cn_img,
+                            cn_stop=img_prompt.cn_stop,
+                            cn_weight=img_prompt.cn_weight,
+                            cn_type=img_prompt.cn_type)
+        image_prompts_files.append(image)
+    while len(image_prompts_files) <= 4:
+        image_prompts_files.append(default_image_promt)
+    up_scale_req.image_prompts = image_prompts_files
+    return call_worker(up_scale_req, accept,priority=True)
+
+
+@secure_router.post("/v2/generation/text-to-image",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def text2img_generation(text_to_image_req: Text2ImgRequest, up_scale_req: ImgUpscaleOrVaryRequestJson, image_style: Image_Style, accept: str = Header(None),
+                        accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    
+    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
+        random_number = random.randint(0, 3)
+        image_style.id = random_number
+    style = image_styles[image_style.id]
+    text_to_image_req = overwrite_style_params(text_to_image_req, style, image_style.id)
+    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id)
+    
+    text_to_image_req.image_style = image_style.id
+    up_scale_req.image_style = image_style.id
+
     if up_scale_req.upscale_value<=1:
         return text2img_generation(req=text_to_image_req,accept=accept,accept_query=accept_query)
     if accept_query is not None and len(accept_query) > 0:
@@ -205,7 +407,6 @@ def text2img_generation(req: Text2ImgRequest, accept: str = Header(None),
                         accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
-
     return call_worker(req, accept)
 
 
@@ -267,6 +468,39 @@ def img_upscale_or_vary_v2(req: ImgUpscaleOrVaryRequestJson,
     req.image_prompts = image_prompts_files
 
     return call_worker(req, accept)
+
+
+@secure_router.post("/v3/generation/image-upscale-vary", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJson, image_style: Image_Style,
+                           accept: str = Header(None),
+                           accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    
+    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
+        random_number = random.randint(0, 3)
+        image_style.id = random_number
+
+    style = image_styles[image_style.id]
+    image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, True)
+    
+    if accept_query is not None and len(accept_query) > 0:
+        accept = accept_query
+
+    image_upscale_or_vary_req.input_image = base64_to_stream(image_upscale_or_vary_req.input_image)
+
+    default_image_promt = ImagePrompt(cn_img=None)
+    image_prompts_files: List[ImagePrompt] = []
+    for img_prompt in image_upscale_or_vary_req.image_prompts:
+        img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
+        image = ImagePrompt(cn_img=img_prompt.cn_img,
+                            cn_stop=img_prompt.cn_stop,
+                            cn_weight=img_prompt.cn_weight,
+                            cn_type=img_prompt.cn_type)
+        image_prompts_files.append(image)
+    while len(image_prompts_files) <= 4:
+        image_prompts_files.append(default_image_promt)
+    image_upscale_or_vary_req.image_prompts = image_prompts_files
+
+    return call_worker(image_upscale_or_vary_req, accept)
 
 
 @secure_router.post("/v1/generation/image-inpaint-outpaint", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
@@ -350,6 +584,70 @@ def img_prompt_v2(req: ImgPromptRequestJson,
 def img_prompt_upscale(image_prompt_req: ImgPromptRequestJson,up_scale_req: ImgUpscaleOrVaryRequestJson, 
                accept: str = Header(None),
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+
+    #up_scale_req.upscale_value = 1.5
+
+    if up_scale_req.upscale_value<=1:
+        return img_prompt_v2(req=image_prompt_req,accept=accept,accept_query=accept_query)
+    if accept_query is not None and len(accept_query) > 0:
+        accept = accept_query
+
+    if image_prompt_req.input_image is not None:
+        image_prompt_req.input_image = base64_to_stream(image_prompt_req.input_image)
+    if image_prompt_req.input_mask is not None:
+        image_prompt_req.input_mask = base64_to_stream(image_prompt_req.input_mask)
+
+    default_image_promt = ImagePrompt(cn_img=None)
+    image_prompts_files: List[ImagePrompt] = []
+    for img_prompt in image_prompt_req.image_prompts:
+        img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
+        image = ImagePrompt(cn_img=img_prompt.cn_img,
+                            cn_stop=img_prompt.cn_stop,
+                            cn_weight=img_prompt.cn_weight,
+                            cn_type=img_prompt.cn_type)
+        image_prompts_files.append(image)
+
+    while len(image_prompts_files) <= 4:
+        image_prompts_files.append(default_image_promt)
+
+    image_prompt_req.image_prompts = image_prompts_files
+
+    image_prompt_req.require_base64=True
+    step1 = call_worker(image_prompt_req, accept,step2req=True)
+    up_scale_req.input_image=step1[0].base64
+    
+    up_scale_req.input_image = base64_to_stream(up_scale_req.input_image)
+
+    default_image_promt = ImagePrompt(cn_img=None)
+    image_prompts_files: List[ImagePrompt] = []
+    for img_prompt in up_scale_req.image_prompts:
+        img_prompt.cn_img = base64_to_stream(img_prompt.cn_img)
+        image = ImagePrompt(cn_img=img_prompt.cn_img,
+                            cn_stop=img_prompt.cn_stop,
+                            cn_weight=img_prompt.cn_weight,
+                            cn_type=img_prompt.cn_type)
+        image_prompts_files.append(image)
+    while len(image_prompts_files) <= 4:
+        image_prompts_files.append(default_image_promt)
+    up_scale_req.image_prompts = image_prompts_files
+    return call_worker(up_scale_req, accept,priority=True)
+
+@secure_router.post("/v2/generation/image-to-image", response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
+def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: ImgUpscaleOrVaryRequestJson, image_style: Image_Style,
+               accept: str = Header(None),
+               accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
+    
+    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
+        random_number = random.randint(0, 3)
+        image_style.id = random_number
+    
+    style = image_styles[image_style.id]
+    image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
+    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id)
+
+    image_prompt_req.image_style = image_style.id
+    up_scale_req.image_style = image_style.id
+
     if up_scale_req.upscale_value<=1:
         return img_prompt_v2(req=image_prompt_req,accept=accept,accept_query=accept_query)
     if accept_query is not None and len(accept_query) > 0:
@@ -555,3 +853,5 @@ def start_app(args):
     file_utils.static_serve_base_url = args.base_url + "/files/"
     uvicorn.run("fooocusapi.api:app", host=args.host,
                 port=args.port, log_level=args.log_level)
+
+
