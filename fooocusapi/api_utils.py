@@ -217,12 +217,13 @@ def generate_streaming_output(results: List[ImageGenerationResult]) -> Response:
     return Response(bytes, media_type='image/png')
 
 
-def generate_image_result_output(results: List[ImageGenerationResult], require_base64: bool) -> List[GeneratedImageResult]:
+def generate_image_result_output(results: List[ImageGenerationResult], require_base64: bool, image_style: int = -1) -> List[GeneratedImageResult]:
     results = [GeneratedImageResult(
             base64=output_file_to_base64img(item.im) if require_base64 else None,
             url=get_file_serve_url(item.im),
             seed=item.seed,
-            finish_reason=item.finish_reason) for item in results]
+            finish_reason=item.finish_reason,
+            image_style=image_style) for item in results]
     return results
 
 
