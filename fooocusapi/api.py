@@ -475,7 +475,7 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
                            accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     
     if (image_style.id == -1) or (image_style.id>=len(image_styles)):
-        random.randint(0, len(image_styles)-1)
+        image_style.id = random.randint(0, len(image_styles)-1)
 
     style = image_styles[image_style.id]
     image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, True)
@@ -636,7 +636,7 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     
     if (image_style.id == -1) or (image_style.id>=len(image_styles)):
-        random.randint(0, len(image_styles)-1)
+        image_style.id = random.randint(0, len(image_styles)-1)
     
     style = image_styles[image_style.id]
     image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
