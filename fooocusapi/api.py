@@ -483,8 +483,15 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
 
-    image_upscale_or_vary_req.input_image = base64_to_stream(image_upscale_or_vary_req.input_image)
+    if image_upscale_or_vary_req.prompt == "":
+        from extras.wd14tagger import default_interrogator as default_interrogator_anime
+        interrogator = default_interrogator_anime
+        image = base64_to_stream(image_upscale_or_vary_req.input_image)
+        img = HWC3(read_input_image(image))
+        result = interrogator(img)
+        image_upscale_or_vary_req.prompt = result
 
+    image_upscale_or_vary_req.input_image = base64_to_stream(image_upscale_or_vary_req.input_image)
     default_image_promt = ImagePrompt(cn_img=None)
     image_prompts_files: List[ImagePrompt] = []
     for img_prompt in image_upscale_or_vary_req.image_prompts:
@@ -554,6 +561,13 @@ def img_prompt_v2(req: ImgPromptRequestJson,
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
+
+    if req.prompt == "" and len(req.image_prompts) > 0:
+        from extras.wd14tagger import default_interrogator as default_interrogator_anime
+        interrogator = default_interrogator_anime
+        image = base64_to_stream(req.image_prompts[0].cn_img)
+        img = HWC3(read_input_image(image))
+        req.prompt = interrogator(img)
 
     if req.input_image is not None:
         req.input_image = base64_to_stream(req.input_image)
@@ -640,7 +654,7 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
     
     style = image_styles[image_style.id]
     image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
-    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id)
+    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id, upscale=True)
 
     image_prompt_req.image_style = image_style.id
     up_scale_req.image_style = image_style.id
@@ -649,6 +663,15 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
         return img_prompt_v2(req=image_prompt_req,accept=accept,accept_query=accept_query)
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
+
+    if image_prompt_req.prompt == "" and len(image_prompt_req.image_prompts) > 0:
+        from extras.wd14tagger import default_interrogator as default_interrogator_anime
+        interrogator = default_interrogator_anime
+        image = base64_to_stream(image_prompt_req.image_prompts[0].cn_img)
+        img = HWC3(read_input_image(image))
+        result = interrogator(img)
+        image_prompt_req.prompt = result
+        up_scale_req.prompt = result
 
     if image_prompt_req.input_image is not None:
         image_prompt_req.input_image = base64_to_stream(image_prompt_req.input_image)
