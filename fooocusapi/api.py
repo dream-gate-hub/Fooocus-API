@@ -170,6 +170,7 @@ image_styles = [
 def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
     req.image_style = id
     req.base_model_name = imageStyle.model
+    req.prompt = "(masterpiece), ultra-detailed, (illustration), ultra-detailed, (extremely delicate eyes:1.3), masterpiece, best quality, " + req.prompt
     req.negative_prompt = imageStyle.negative_prompt
     req.guidance_scale = imageStyle.guidance_scale
     req.style_selections = imageStyle.styles
