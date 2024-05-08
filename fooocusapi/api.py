@@ -63,7 +63,7 @@ class ImageStyle():
             else:
                 self.guidance_scale = 4
                 self.cfg = 7
-                self.steps = 30
+                self.steps = 50
                 self.sampler_name = "dpmpp_2m_sde_gpu"
                 self.scheduler_name = "karras"
         else:
@@ -371,7 +371,9 @@ def text2img_generation(text_to_image_req: Text2ImgRequest, up_scale_req: ImgUps
         image_style.id = random.randint(0, len(image_styles)-1)
     style = image_styles[image_style.id]
     text_to_image_req = overwrite_style_params(text_to_image_req, style, image_style.id)
-    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id)
+    if text_to_image_req.advanced_params.overwrite_step != 50:
+        up_scale_req.upscale_value = 1.5
+    up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id, upscale=True)
     
     text_to_image_req.image_style = image_style.id
     up_scale_req.image_style = image_style.id
@@ -654,6 +656,8 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
     
     style = image_styles[image_style.id]
     image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
+    if image_prompt_req.advanced_params.overwrite_step != 50:
+        up_scale_req.upscale_value = 1.5
     up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id, upscale=True)
 
     image_prompt_req.image_style = image_style.id
