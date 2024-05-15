@@ -167,10 +167,11 @@ image_styles = [
     
 ]
 
-def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
+def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False, extend_prompt: bool = True) -> Text2ImgRequest:
     req.image_style = id
     req.base_model_name = imageStyle.model
-    req.prompt = "(masterpiece), ultra-detailed, (illustration), ultra-detailed, (extremely delicate eyes:1.3), masterpiece, best quality, " + req.prompt
+    if extend_prompt :
+        req.prompt = "(masterpiece), ultra-detailed, (illustration), ultra-detailed, (extremely delicate eyes:1.3), masterpiece, best quality, " + req.prompt
     req.negative_prompt = imageStyle.negative_prompt
     req.guidance_scale = imageStyle.guidance_scale
     req.style_selections = imageStyle.styles
@@ -284,6 +285,7 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
     """
 
     print(f"图片风格：{req.image_style}")
+    print(f"图片prompt：{req.prompt}")
 
     task_type = get_task_type(req)
     params = req_to_params(req)
@@ -480,8 +482,10 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
     if (image_style.id == -1) or (image_style.id>=len(image_styles)):
         image_style.id = random.randint(0, len(image_styles)-1)
 
+    vary_mode = image_upscale_or_vary_req.advanced_params.overwrite_vary_strength >= 0
+
     style = image_styles[image_style.id]
-    image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, True)
+    image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, not vary_mode, extend_prompt=False)
     
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
