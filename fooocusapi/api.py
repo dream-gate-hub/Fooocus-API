@@ -167,11 +167,10 @@ image_styles = [
     
 ]
 
-def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False, extend_prompt: bool = True) -> Text2ImgRequest:
+def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
     req.image_style = id
     req.base_model_name = imageStyle.model
-    if extend_prompt :
-        req.prompt = "(masterpiece), ultra-detailed, (illustration), ultra-detailed, (extremely delicate eyes:1.3), masterpiece, best quality, " + req.prompt
+    req.prompt = req.prompt
     req.negative_prompt = imageStyle.negative_prompt
     req.guidance_scale = imageStyle.guidance_scale
     req.style_selections = imageStyle.styles
@@ -485,7 +484,7 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
     vary_mode = image_upscale_or_vary_req.advanced_params.overwrite_vary_strength >= 0
 
     style = image_styles[image_style.id]
-    image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, not vary_mode, extend_prompt=False)
+    image_upscale_or_vary_req = overwrite_style_params(image_upscale_or_vary_req, style, image_style.id, not vary_mode)
     
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
