@@ -150,22 +150,23 @@ class ImageStyle():
     ImageStyle("ponyDiffusionV6XL_v6StartWithThisOne.safetensors", use_default=True),
     ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
     """
-image_styles = [
 
-    ImageStyle("animagineXL_v20.safetensors", use_default=True),
-    ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
-    ImageStyle("AnythingXL_xl.safetensors", use_default=True),
-    ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True),
-    ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
-    ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
-    ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
-    ImageStyle("animaPencilXL_v300.safetensors", use_default=True),
-    ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
-    ImageStyle("juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
-    ImageStyle("CHEYENNE_v16.safetensors", use_default=True),
-    ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
+image_styles = {
+
+    0: ImageStyle("animagineXL_v20.safetensors", use_default=True),
+    1: ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
+    2: ImageStyle("AnythingXL_xl.safetensors", use_default=True),
+    3: ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True),
+    4: ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
+    #5: ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
+    6: ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
+    7: ImageStyle("animaPencilXL_v300.safetensors", use_default=True),
+    8: ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
+    9:ImageStyle("juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
+    10:ImageStyle("CHEYENNE_v16.safetensors", use_default=True),
+    #11:ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
     
-]
+}
 
 def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
     req.image_style = id
@@ -368,9 +369,9 @@ def text2imgAndUpscale_generation(text_to_image_req: Text2ImgRequest, up_scale_r
 @secure_router.post("/v2/generation/text-to-image",response_model=List[GeneratedImageResult] | AsyncJobResponse, responses=img_generate_responses)
 def text2img_generation(text_to_image_req: Text2ImgRequest, up_scale_req: ImgUpscaleOrVaryRequestJson, image_style: Image_Style, accept: str = Header(None),
                         accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
-    
-    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
-        image_style.id = random.randint(0, len(image_styles)-1)
+
+    if image_style.id not in image_styles:
+        image_style.id = random.choice(list(image_styles.keys()))
     style = image_styles[image_style.id]
     text_to_image_req = overwrite_style_params(text_to_image_req, style, image_style.id)
     if text_to_image_req.advanced_params.overwrite_step != 50:
@@ -478,8 +479,8 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
                            accept: str = Header(None),
                            accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     
-    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
-        image_style.id = random.randint(0, len(image_styles)-1)
+    if image_style.id not in image_styles:
+        image_style.id = random.choice(list(image_styles.keys()))
 
     vary_mode = image_upscale_or_vary_req.advanced_params.overwrite_vary_strength >= 0
 
@@ -655,8 +656,8 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
                accept: str = Header(None),
                accept_query: str | None = Query(None, alias='accept', description="Parameter to overvide 'Accept' header, 'image/png' for output bytes")):
     
-    if (image_style.id == -1) or (image_style.id>=len(image_styles)):
-        image_style.id = random.randint(0, len(image_styles)-1)
+    if image_style.id not in image_styles:
+        image_style.id = random.choice(list(image_styles.keys()))
     
     style = image_styles[image_style.id]
     image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
