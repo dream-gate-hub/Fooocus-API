@@ -27,7 +27,7 @@ if __name__ == "__main__":
     subprocess.run(["pkill", "-f", "python main.py --port 6006 --queue-history 3"])
     time.sleep(3)
     subprocess.Popen(["python", "main.py", "--port", "6006", "--queue-history", "3"])
-    time.sleep(20)
+    time.sleep(60)
 
     flag = True
     while flag:
