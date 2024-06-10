@@ -169,6 +169,39 @@ class TaskQueue(object):
                         if isinstance(item, ImageGenerationResult) and item.finish_reason == GenerationFinishReason.success and item.im is not None:
                             delete_output_file(item.im)
                 print(f"Clean task history, remove task: {removed_task.job_id}")
+            
+            cleanup_old_folders("./repositories/Fooocus/outputs")
+
+import os
+import shutil
+from datetime import datetime, timedelta
+
+def cleanup_old_folders(directory):
+    """
+    删除指定目录下除最近三天以外的子文件夹。
+
+    :param directory: 需要清理的目录路径
+    """
+    # 获取当前日期
+    current_date = datetime.now()
+
+    # 定义要保留的日期范围（最近三天）
+    date_range = [current_date - timedelta(days=i) for i in range(3)]
+
+    # 将日期范围转换为字符串格式
+    date_strings = [date.strftime('%Y-%m-%d') for date in date_range]
+
+    # 遍历目录下的子文件夹
+    absolute_path = os.path.abspath(directory)
+    for folder_name in os.listdir(absolute_path):
+        folder_path = os.path.join(absolute_path, folder_name)
+        # 检查文件夹名是否在要保留的日期范围内
+        if os.path.isdir(folder_path) and folder_name not in date_strings:
+            # 删除文件夹
+            shutil.rmtree(folder_path)
+            print(f'Deleted folder: {folder_path}')
+
+    print('Cleanup complete.')
 
 
 class TaskOutputs:
