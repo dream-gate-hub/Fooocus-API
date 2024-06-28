@@ -454,6 +454,7 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
         accept = accept_query
 
     if image_upscale_or_vary_req.prompt == "":
+        image = base64_to_stream(image_upscale_or_vary_req.input_image)
         result = get_image_description(read_input_image(image))
         image_upscale_or_vary_req.prompt = result
 
