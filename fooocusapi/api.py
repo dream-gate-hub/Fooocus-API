@@ -117,8 +117,8 @@ image_styles = {
     
     
 
-    41: ImageStyle("vxpXLHyper_vxpXLV15.safetensors", guidance_scale=1.5, cfg=1.5, sampler_name="euler_ancestral", scheduler_name="karras", steps=7, lora_prompt=", (masterpiece:1.2), (best quality:1.2), (very aesthetic:1.2), (absurdres:1.2), (detailed background), newest"), # 2lin
-    42: ImageStyle("TurboSemiRealisticXL_v10.safetensors", sdxl_fast = True, cfg=2.3, sampler_name="dpmpp_sde", scheduler_name="karras", steps=5), # 2lin
+    # 41: ImageStyle("vxpXLHyper_vxpXLV15.safetensors", guidance_scale=1.5, cfg=1.5, sampler_name="euler_ancestral", scheduler_name="karras", steps=7, lora_prompt=", (masterpiece:1.2), (best quality:1.2), (very aesthetic:1.2), (absurdres:1.2), (detailed background), newest"), # 2lin
+    # 42: ImageStyle("TurboSemiRealisticXL_v10.safetensors", sdxl_fast = True, cfg=2.3, sampler_name="dpmpp_sde", scheduler_name="karras", steps=5), # 2lin
     # 43: ImageStyle("raemuXL_v35Lightning.safetensors", sdxl_fast = True),
     # 44: ImageStyle("moxieFusionXL_v17.safetensors", sdxl_fast = True),
     # 45: ImageStyle("marduk191sPseudoModern_v10.safetensors", sdxl_fast = True),
