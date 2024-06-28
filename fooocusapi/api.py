@@ -48,22 +48,28 @@ class Image_Style(BaseModel):
     id: int = 0
 
 class ImageStyle():
-    def __init__(self, model: str, styles: List[str] = ["Fooocus V2", "Fooocus Masterpiece"], sdxl_fast: bool = False, use_default: bool = False, guidance_scale: int = 1, cfg: int = 4, steps: int = 8, sampler_name: str = "dpmpp_sde_gpu", scheduler_name: str = "sgm_uniform", negative_prompt: int = 0):
+    
+    def __init__(self, model: str,lora_prompt:str = '', loras: List[Lora] = default_loras_model, styles: List[str] = ["Fooocus V2", "Fooocus Masterpiece"], sdxl_fast: bool = False, use_default: bool = False, guidance_scale: int = 1, cfg: int = 4, steps: int = 8, sampler_name: str = "dpmpp_sde_gpu", scheduler_name: str = "sgm_uniform", negative_prompt: int = 0):
         self.model = model  
+        self.loras = loras
+        self.sdxl_fast = sdxl_fast
         self.styles = styles
         self.negative_prompt = negative_prompts[negative_prompt]
+        self.lora_prompt=lora_prompt
         
         if use_default:
             if sdxl_fast:
                 self.guidance_scale = 1
                 self.cfg = 4
+                # self.cfg = 2
                 self.steps = 15
                 self.sampler_name = "dpmpp_sde_gpu"
                 self.scheduler_name = "sgm_uniform"
             else:
                 self.guidance_scale = 4
                 self.cfg = 7
-                self.steps = 50
+                self.steps = 30
+                # self.steps = 20
                 self.sampler_name = "dpmpp_2m_sde_gpu"
                 self.scheduler_name = "karras"
         else:
@@ -73,105 +79,60 @@ class ImageStyle():
             self.sampler_name = sampler_name
             self.scheduler_name = scheduler_name
 
-    """
-    fast
-    ImageStyle("218xl_turbotest.safetensors", sdxl_fast = True),                     
-    ImageStyle("aamXLAnimeMix_v10HalfturboEulera.safetensors", sdxl_fast = True),    
-    ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"),                    
-    ImageStyle("bluePencilXLLCM_v310Lcm.safetensors", sdxl_fast = True),             
-    ImageStyle("bluePencilXLLCM_v500Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 15, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"),      
-    ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),                  
-    ImageStyle("dreamshaperXL_alpha2Xl10.safetensors", sdxl_fast = True),            
-    ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
-    ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
-    ImageStyle("envyturboagendaxl01Anime_v11.safetensors", sdxl_fast = True, cfg = 2.5, steps = 8, sampler_name = "dpmpp_2m_sde", scheduler_name = "karras"),
-    ImageStyle("juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
-    ImageStyle("level4XL_alphaV02.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
-    ImageStyle("odemXL_v2.safetensors", sdxl_fast = True),
-    ImageStyle("osorubeshixlKakkoii_v10.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "euler_ancestral", scheduler_name = "karras"),
-    ImageStyle("reproductionLCM_v2.safetensors", sdxl_fast = True),
-    ImageStyle("vibrantHorizonTurbo_v20.safetensors", sdxl_fast = True, cfg = 3.5, steps = 10, sampler_name = "dpmpp_2m_sde", scheduler_name = "karras"),
-    ImageStyle("vxpXLTURBO_vxpXLV15.safetensors", sdxl_fast = True, cfg = 3, steps = 8, sampler_name = "euler_ancestral", scheduler_name = "karras"),
-
-    ImageStyle("7thAnimeXLA_v10.safetensors", use_default=True),
-    ImageStyle("afroditexlNudePeople_31.safetensors", use_default=True),
-    ImageStyle("copaxTimelessxlSDXL1_v12.safetensors", use_default=True),
-    ImageStyle("everclearPNYByZovya_v2VAE.safetensors", use_default=True),
-    ImageStyle("fullyREALXL_v90Vividreal.safetensors", cfg = 4, steps = 60, sampler_name = "DPM++ 2M SDE"),
-    ImageStyle("iniverseMixXLSFWNSFW_v75Real.safetensors", use_default=True),
-    ImageStyle("PVCStyleModelMovable_beta25Realistic.safetensors", use_default=True),
-    ImageStyle("tPonynai3_v35.safetensors", use_default=True),
-    ImageStyle("zavychromaxl_v60.safetensors", use_default=True),
-
-    ImageStyle("holoanimeXL_v27.safetensors", use_default=True),
-    ImageStyle("pilgrim2DSDXL_v50.safetensors", use_default=True),
-    ImageStyle("raemuXL_v30.safetensors", use_default=True),
-    ImageStyle("randommaxxArtMerge_v10.safetensors", use_default=True),
-
-
-    sdxl
-    ImageStyle("aamXLAnimeMix_v10.safetensors", use_default=True),
-    ImageStyle("animagineXL_v20.safetensors", use_default=True),
-    ImageStyle("animagineXLV31_v31.safetensors", guidance_scale = 4, cfg = 7, steps = 30, sampler_name = "euler_ancestral", scheduler_name = "karras"),
-    ImageStyle("animaPencilXL_v300.safetensors", use_default=True),
-    ImageStyle("animeIllustDiffusion_v08.safetensors", use_default=True),
-    ImageStyle("AnythingXL_xl.safetensors", use_default=True),
-    ImageStyle("artium_v20.safetensors", use_default=True),
-    ImageStyle("bluePencilXL_v401.safetensors", use_default=True),
-    ImageStyle("bluePencilXL_v600.safetensors", use_default=True),
-    ImageStyle("CHEYENNE_v16.safetensors", use_default=True),
-    ImageStyle("counterfeitxl_v25.safetensors", use_default=True),
-    ImageStyle("dreamshaperXL_alpha2Xl10.safetensors", use_default=True),
-    ImageStyle("hassakuXLSfwNsfw_betaV06.safetensors", use_default=True),
-    ImageStyle("himawarimix_xlV6.safetensors", use_default=True),
-    ImageStyle("juggernautXL_version6Rundiffusion.safetensors", use_default=True),
-    ImageStyle("matrixHentaiPlusXL_v16.safetensors", use_default=True),
-    ImageStyle("protovisionXLHighFidelity3D.safetensors", use_default=True),
-    ImageStyle("reproductionSDXL_2v12.safetensors", use_default=True),
-    ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
-    ImageStyle("sdxlUnstableDiffusers_nihilmania.safetensors", use_default=True),
-    ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True),
-    ImageStyle("ponyDiffusionV6XL_v6StartWithThisOne.safetensors", use_default=True),
-    ImageStyle("starlightXLAnimated_v3.safetensors", use_default=True),
-    ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
-
-    在用
-    ImageStyle("AnythingXL_xl.safetensors", use_default=True),
-    ImageStyle("animaPencilXL_v300.safetensors", use_default=True),
-    ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True),
-    ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
-    ImageStyle("animagineXL_v20.safetensors", use_default=True),
-    ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
-    ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
-    ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
-    ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
-    ImageStyle("CHEYENNE_v16.safetensors", use_default=True),
-    ImageStyle("juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
-    ImageStyle("ponyDiffusionV6XL_v6StartWithThisOne.safetensors", use_default=True),
-    ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
-    """
-
 image_styles = {
 
-    0: ImageStyle("animagineXL_v20.safetensors", use_default=True),
-    1: ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
-    2: ImageStyle("AnythingXL_xl.safetensors", use_default=True),
-    3: ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True),
-    4: ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
-    #5: ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
-    6: ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
-    7: ImageStyle("animaPencilXL_v300.safetensors", use_default=True),
-    8: ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
+    0:ImageStyle("animagineXL_v20.safetensors", use_default=True),
+    1:ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
+    2:ImageStyle("AnythingXL_xl.safetensors", use_default=True),
+    3:ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True), # lin
+    4:ImageStyle("sdvn7Nijistylexl_v1.safetensors", use_default=True),
+    #5:ImageStyle("duchaitenNijiuncen_v10LightningTCD.safetensors", sdxl_fast = True, cfg = 5, steps = 12, sampler_name = "euler_ancestral"),
+    6:ImageStyle("sdxlNijiSpecial_sdxlNijiSE.safetensors", use_default=True),
+    7:ImageStyle("animaPencilXL_v300.safetensors", guidance_scale=6, cfg=4, sampler_name="dpmpp_sde", scheduler_name="karras"), # lin
+    8:ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True, cfg = 2, steps = 8, sampler_name = "dpmpp_sde_gpu", scheduler_name = "sgm_uniform"), 
     9:ImageStyle("juggernautXL_v9Rdphoto2Lightning.safetensors", sdxl_fast = True, cfg = 2, steps = 6, sampler_name = "dpmpp_sde", scheduler_name = "karras"),
     10:ImageStyle("CHEYENNE_v16.safetensors", use_default=True),
-    #11:ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),  
+    # 11:ImageStyle("breakdomainxl_V06d.safetensors", sdxl_fast = True, use_default = True),
+
+    12:ImageStyle("aamXLAnimeMix_v10.safetensors", cfg=7, guidance_scale=4, sampler_name="euler_ancestral", scheduler_name="karras", steps=30, lora_prompt=", cinematic shot, Wallpaper, detailed background"), # lin
+    13:ImageStyle("shikianimexl_v10.safetensors", guidance_scale=7, cfg=8, sampler_name="dpmpp_sde", scheduler_name="karras"), # lin
+    14:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="IPXL_v2_LoRA.safetensors", weight=0.9)], use_default=True, lora_prompt=", (inkpunk style vibrant color)"), # lin
+    15:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="Samaritan3dCartoonXL_LoRA.safetensors", weight=0.7)], use_default=True), # lin
+    16:ImageStyle("artium_v20.safetensors", use_default=True, lora_prompt=", highly detailed, deep darks, high contrast, masterpiece, 8k, French vibe, art by Hayao Miyazaki AND Phil Noto"), # lin
+    17:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="ParchartXL_CODA_LoRA.safetensors", weight=0.5)], cfg = 4.7, guidance_scale=4, sampler_name="dpmpp_2m_sde_gpu", scheduler_name="karras", lora_prompt=", on parchment"), # lin
+    18:ImageStyle("kohakuXLBeta_beta7.safetensors", use_default=True, cfg=5, guidance_scale=4, sampler_name="dpmpp_2m_sde_gpu", scheduler_name="karras"), # lin
+    19:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="TShirtDesignRedmondAF_v2_LoRA.safetensors", weight=1)], use_default=True, guidance_scale=7, sampler_name="euler_ancestral", lora_prompt=", strong outline, white outline, masterpiece, sticker style, vector art, digital art"), # lin
+    20:ImageStyle("kohakuXLBeta_beta7.safetensors", loras=[Lora(model_name="shuimoXL_LoRA.safetensors", weight=1.2)], use_default=True, lora_prompt=", ink wash painting style"), # lin
+    21:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="chineseStyleIllustration_LoRA.safetensors", weight=0.9)], cfg=8, guidance_scale=8, sampler_name="dpmpp_2m_sde_gpu", scheduler_name="karras", steps=30, lora_prompt=", guofeng, illustration, 8k wallpaper, finely detail, official art"), # lin
+    22:ImageStyle("4Guofeng4XL_v12.safetensors", use_default=True), # lin
+
+    # 12:ImageStyle("animaPencilXL_v400.safetensors", use_default=True), # not found
+    # 13:ImageStyle("cartoonArcadiaSDXLSD1_v2.safetensors", use_default=True),
+    # 14:ImageStyle("envyStarlightXL01Lightning_nova.safetensors", use_default=True),
+    # 15:ImageStyle("sdxlUnstableDiffusers_nihilmania.safetensors", use_default=True,steps = 50,cfg = 10),
+    # #LoRA
+    # 24:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="princess_xl_v2.safetensors", weight=2.0)], use_default=True),
+    # 25:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="RX78_SDXL_v3_loha.safetensors", weight=0.99)], use_default=True),
+    # # 27:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="pantyhose_xl_v1.safetensors", weight=1.0)], use_default=True),
     
+    
+
+    41: ImageStyle("vxpXLHyper_vxpXLV15.safetensors", guidance_scale=1.5, cfg=1.5, sampler_name="euler_ancestral", scheduler_name="karras", steps=7, lora_prompt=", (masterpiece:1.2), (best quality:1.2), (very aesthetic:1.2), (absurdres:1.2), (detailed background), newest"), # 2lin
+    42: ImageStyle("TurboSemiRealisticXL_v10.safetensors", sdxl_fast = True, cfg=2.3, sampler_name="dpmpp_sde", scheduler_name="karras", steps=5), # 2lin
+    # 43: ImageStyle("raemuXL_v35Lightning.safetensors", sdxl_fast = True),
+    # 44: ImageStyle("moxieFusionXL_v17.safetensors", sdxl_fast = True),
+    # 45: ImageStyle("marduk191sPseudoModern_v10.safetensors", sdxl_fast = True),
+    # 46: ImageStyle("autismmixSDXL_autismmixLightning.safetensors", sdxl_fast = True),
+    # 47: ImageStyle("atomixAnimeXL_v10.safetensors", sdxl_fast = True),
+    
+
 }
 
 def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int, upscale: bool = False) -> Text2ImgRequest:
     req.image_style = id
     req.base_model_name = imageStyle.model
-    req.prompt = req.prompt
+    req.prompt = req.prompt + imageStyle.lora_prompt
+    print("final prompt is:",req.prompt)
     req.negative_prompt = imageStyle.negative_prompt
     req.guidance_scale = imageStyle.guidance_scale
     req.style_selections = imageStyle.styles
@@ -179,6 +140,7 @@ def overwrite_style_params(req: Text2ImgRequest, imageStyle: ImageStyle, id: int
     req.advanced_params.overwrite_step = imageStyle.steps
     req.advanced_params.sampler_name = imageStyle.sampler_name
     req.advanced_params.scheduler_name = imageStyle.scheduler_name
+    req.loras = imageStyle.loras
     if upscale:
         req.advanced_params.overwrite_step = int(imageStyle.steps * 0.6)
     return req
@@ -374,7 +336,8 @@ def text2img_generation(text_to_image_req: Text2ImgRequest, up_scale_req: ImgUps
         image_style.id = random.choice(list(image_styles.keys()))
     style = image_styles[image_style.id]
     text_to_image_req = overwrite_style_params(text_to_image_req, style, image_style.id)
-    if text_to_image_req.advanced_params.overwrite_step != 50:
+    
+    if style.sdxl_fast:
         up_scale_req.upscale_value = 1.5
     up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id, upscale=True)
     
@@ -491,11 +454,7 @@ def img_upscale_or_vary_v3(image_upscale_or_vary_req: ImgUpscaleOrVaryRequestJso
         accept = accept_query
 
     if image_upscale_or_vary_req.prompt == "":
-        from extras.wd14tagger import default_interrogator as default_interrogator_anime
-        interrogator = default_interrogator_anime
-        image = base64_to_stream(image_upscale_or_vary_req.input_image)
-        img = HWC3(read_input_image(image))
-        result = interrogator(img)
+        result = get_image_description(read_input_image(image))
         image_upscale_or_vary_req.prompt = result
 
     image_upscale_or_vary_req.input_image = base64_to_stream(image_upscale_or_vary_req.input_image)
@@ -570,11 +529,8 @@ def img_prompt_v2(req: ImgPromptRequestJson,
         accept = accept_query
 
     if req.prompt == "" and len(req.image_prompts) > 0:
-        from extras.wd14tagger import default_interrogator as default_interrogator_anime
-        interrogator = default_interrogator_anime
-        image = base64_to_stream(req.image_prompts[0].cn_img)
-        img = HWC3(read_input_image(image))
-        req.prompt = interrogator(img)
+        result = get_image_description(read_input_image(image))
+        req.prompt = result
 
     if req.input_image is not None:
         req.input_image = base64_to_stream(req.input_image)
@@ -661,7 +617,8 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
     
     style = image_styles[image_style.id]
     image_prompt_req = overwrite_style_params(image_prompt_req, style, image_style.id)
-    if image_prompt_req.advanced_params.overwrite_step != 50:
+
+    if style.sdxl_fast:
         up_scale_req.upscale_value = 1.5
     up_scale_req = overwrite_style_params(up_scale_req, style, image_style.id, upscale=True)
 
@@ -674,11 +631,7 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
         accept = accept_query
 
     if image_prompt_req.prompt == "" and len(image_prompt_req.image_prompts) > 0:
-        from extras.wd14tagger import default_interrogator as default_interrogator_anime
-        interrogator = default_interrogator_anime
-        image = base64_to_stream(image_prompt_req.image_prompts[0].cn_img)
-        img = HWC3(read_input_image(image))
-        result = interrogator(img)
+        result = get_image_description(read_input_image(image))
         image_prompt_req.prompt = result
         up_scale_req.prompt = result
 
@@ -763,17 +716,22 @@ def stop():
     stop_worker()
     return StopResponse(msg="success")
 
+def get_image_description(image: np.ndarray) -> str:
+    img = HWC3(image)
+
+    from extras.interrogate import default_interrogator as default_interrogator_photo
+    interrogator_photo = default_interrogator_photo
+
+    from extras.wd14tagger import default_interrogator as default_interrogator_anime
+    interrogator_anime = default_interrogator_anime
+    
+    photo_result = interrogator_photo(img)
+    anime_result = interrogator_anime(img)
+    return photo_result + ", 8k resolution, " + anime_result
 
 @secure_router.post("/v1/tools/describe-image", response_model=DescribeImageResponse)
 def describe_image(image: UploadFile, type: DescribeImageType = Query(DescribeImageType.photo, description="Image type, 'Photo' or 'Anime'")):
-    if type == DescribeImageType.photo:
-        from extras.interrogate import default_interrogator as default_interrogator_photo
-        interrogator = default_interrogator_photo
-    else:
-        from extras.wd14tagger import default_interrogator as default_interrogator_anime
-        interrogator = default_interrogator_anime
-    img = HWC3(read_input_image(image))
-    result = interrogator(img)
+    result = get_image_description(read_input_image(image))
     return DescribeImageResponse(describe=result)
 
 
