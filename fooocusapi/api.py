@@ -68,7 +68,7 @@ class ImageStyle():
             else:
                 self.guidance_scale = 4
                 self.cfg = 7
-                self.steps = 30
+                self.steps = 50
                 # self.steps = 20
                 self.sampler_name = "dpmpp_2m_sde_gpu"
                 self.scheduler_name = "karras"
