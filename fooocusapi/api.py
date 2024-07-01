@@ -530,6 +530,7 @@ def img_prompt_v2(req: ImgPromptRequestJson,
         accept = accept_query
 
     if req.prompt == "" and len(req.image_prompts) > 0:
+        image = base64_to_stream(req.image_prompts[0].cn_img)
         result = get_image_description(read_input_image(image))
         req.prompt = result
 
@@ -632,6 +633,7 @@ def img_to_img_generation(image_prompt_req: ImgPromptRequestJson,up_scale_req: I
         accept = accept_query
 
     if image_prompt_req.prompt == "" and len(image_prompt_req.image_prompts) > 0:
+        image =  base64_to_stream(image_prompt_req.image_prompts[0].cn_img)
         result = get_image_description(read_input_image(image))
         image_prompt_req.prompt = result
         up_scale_req.prompt = result
