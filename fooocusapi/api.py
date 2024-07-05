@@ -15,7 +15,7 @@ from fooocusapi.task_queue import TaskType
 from fooocusapi.worker import worker_queue, process_top, blocking_get_task_result
 from fooocusapi.models_v2 import *
 from fooocusapi.img_utils import base64_to_stream, read_input_image
-from fooocusapi.hf_download import download_repo_files
+from huggingface_hub import snapshot_download
 
 from modules.util import HWC3
 import random
@@ -832,16 +832,15 @@ parent_directory = os.path.dirname(current_directory)
 
 
 # 下载人脸识别模型
-repo_id = 'CIDAS/clipseg-rd64-refined'
 download_directory = parent_directory + '/models'
-repo_type = 'model' 
 
 # Call the function to download files from the repository
 if not os.path.exists(download_directory):
-    download_repo_files(None, repo_id, download_directory, repo_type)
+    local_path = snapshot_download(repo_id="CIDAS/clipseg-rd64-refined", cache_dir="/Fooocus-API/models")
+    print(f"Repository downloaded to: {local_path}")
 
-processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models")
-model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models")
+processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
 
 
 
