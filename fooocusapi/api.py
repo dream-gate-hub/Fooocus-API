@@ -15,7 +15,7 @@ from fooocusapi.task_queue import TaskType
 from fooocusapi.worker import worker_queue, process_top, blocking_get_task_result
 from fooocusapi.models_v2 import *
 from fooocusapi.img_utils import base64_to_stream, read_input_image
-from hf_download import download_repo_files
+from fooocusapi.hf_download import download_repo_files
 
 from modules.util import HWC3
 import random
@@ -821,22 +821,24 @@ def GenerateHeadMask(image: UploadFile, threshold = 0.1, blur = 1.0, dilation_fa
     return ans
 
 
-# 下载模型
-repo_id = 'CIDAS/clipseg-rd64-refined'
-download_directory = '/models'
-repo_type = 'model' 
-
-# Call the function to download files from the repository
-download_repo_files(None, repo_id, download_directory, repo_type)
-
+    
 
 # 当前文件的路径
 current_file_path = __file__
 # 当前文件所在的目录
 current_directory = os.path.dirname(current_file_path)
-
 # 当前目录的上一级目录
 parent_directory = os.path.dirname(current_directory)
+
+
+# 下载人脸识别模型
+repo_id = 'CIDAS/clipseg-rd64-refined'
+download_directory = parent_directory + '/models'
+repo_type = 'model' 
+
+# Call the function to download files from the repository
+if not os.path.exists(download_directory):
+    download_repo_files(None, repo_id, download_directory, repo_type)
 
 processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models")
 model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models")
