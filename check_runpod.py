@@ -24,9 +24,9 @@ if __name__ == "__main__":
     cur_time = time.strftime("%Y年%m月%d日%H时%M分%S秒", time.localtime())
     logger.add("/root/Fooocus-API/running.log", mode="a")
     logger.info(f"服务重启:{cur_time}")
-    subprocess.run(["pkill", "-f", "/workspace/fooocus_env/bin/python main.py --port 6006 --queue-history 3"])
+    subprocess.run(["pkill", "-f", "python main.py --port 6006 --queue-history 3"])
     time.sleep(3)
-    subprocess.Popen(["/workspace/fooocus_env/bin/python", "main.py", "--port", "6006", "--queue-history", "3"])
+    subprocess.Popen(["python", "main.py", "--port", "6006", "--queue-history", "3"])
     time.sleep(60)
 
     flag = True
