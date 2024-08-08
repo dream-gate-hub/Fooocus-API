@@ -1,7 +1,9 @@
 import uvicorn
 
 from typing import List, Optional
-from fastapi import Depends, FastAPI, Header, Query, Response, UploadFile, APIRouter, Depends
+from fastapi import Depends, FastAPI, Header, Query, Response, UploadFile, APIRouter, Depends, Request, HTTPException
+import httpx
+from httpx import ReadTimeout
 from fastapi.params import File
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +17,6 @@ from fooocusapi.task_queue import TaskType
 from fooocusapi.worker import worker_queue, process_top, blocking_get_task_result
 from fooocusapi.models_v2 import *
 from fooocusapi.img_utils import base64_to_stream, read_input_image
-from huggingface_hub import snapshot_download
 
 from modules.util import HWC3
 import random
@@ -42,6 +43,9 @@ worst quality, large head, low quality, extra digits, bad eye, EasyNegativeV2, n
 """,
 """
 bad anatomy, bad hands, mutated hand, text, error, missing fingers
+""",
+"""
+score_6, score_5, score_4, source_cartoon, censored ,3d,monochrome,worst quality, low quality, bad anatomy, bad hands, bad body, watermark, blurry,bad quality,extra digit, fewer digits, watermark, multiple limbs,extra limbs, wrong fingers
 """
 ]
 
@@ -106,7 +110,10 @@ image_styles = {
     20:ImageStyle("kohakuXLBeta_beta7.safetensors", loras=[Lora(model_name="shuimoXL_LoRA.safetensors", weight=1.2)], use_default=True, lora_prompt=", ink wash painting style"), # lin
     21:ImageStyle("sdXL_v1.safetensors", loras=[Lora(model_name="chineseStyleIllustration_LoRA.safetensors", weight=0.9)], cfg=8, guidance_scale=8, sampler_name="dpmpp_2m_sde_gpu", scheduler_name="karras", steps=30, lora_prompt=", guofeng, illustration, 8k wallpaper, finely detail, official art"), # lin
     22:ImageStyle("4Guofeng4XL_v12.safetensors", use_default=True), # lin
-
+    23:ImageStyle("toonify_Ponydiffusionxl.safetensors",lora_prompt=",score_9, score_8_up, score_7_up,BREAK cartoon,color saturation,thick lines, form and dynamism, ultra quality, detailed",cfg=7,guidance_scale=4,steps=50,scheduler_name="sgm_uniform",negative_prompt=2,styles=["Fooocus Pony"]),
+    24:ImageStyle("sxzLuma_a1PDXLVAE.safetensors",lora_prompt=",score_9, score_8_up, score_7_up, score_6_up, BREAK source_anime, ultra quality, detailed,masterpiece",cfg=7,guidance_scale=4,steps=50,sampler_name="dpmpp_3m_sde_gpu",negative_prompt=2,styles=["Fooocus Pony"]),#0808
+    25:ImageStyle("waiANINSFWPONYXL_v60.safetensors",lora_prompt=",score_9, score_8_up, score_7_up, score_6_up, ultra quality, detailed,masterpiece",cfg=7,guidance_scale=4,steps=50,sampler_name="dpmpp_3m_sde_gpu",negative_prompt=2,styles=["Fooocus Pony"]),
+    26:ImageStyle("incursiosMemeDiffusion_v21PDXL.safetensors",lora_prompt=",score_9, score_8_up, score_7_up, ultra quality, detailed,toned,underwear",cfg=7,guidance_scale=4,steps=50,sampler_name="restart",negative_prompt=1,styles=["Fooocus Pony"]),#0808
     # 12:ImageStyle("animaPencilXL_v400.safetensors", use_default=True), # not found
     # 13:ImageStyle("cartoonArcadiaSDXLSD1_v2.safetensors", use_default=True),
     # 14:ImageStyle("envyStarlightXL01Lightning_nova.safetensors", use_default=True),
@@ -821,26 +828,17 @@ def GenerateHeadMask(image: UploadFile, threshold = 0.1, blur = 1.0, dilation_fa
     return ans
 
 
-    
 
 # 当前文件的路径
 current_file_path = __file__
 # 当前文件所在的目录
 current_directory = os.path.dirname(current_file_path)
+
 # 当前目录的上一级目录
 parent_directory = os.path.dirname(current_directory)
 
-
-# 下载人脸识别模型
-download_directory = parent_directory + '/models'
-
-# Call the function to download files from the repository
-if not os.path.exists(download_directory):
-    local_path = snapshot_download(repo_id="CIDAS/clipseg-rd64-refined", cache_dir="/Fooocus-API/models")
-    print(f"Repository downloaded to: {local_path}")
-
-processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
-model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+processor = CLIPSegProcessor.from_pretrained("{}".format(parent_directory) + "/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
+model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory) + "/models/clipseg/models--CIDAS--clipseg-rd64-refined/snapshots/583b388deb98a04feb3e1f816dcdb8f3062ee205")
 
 
 
@@ -848,6 +846,80 @@ model = CLIPSegForImageSegmentation.from_pretrained("{}".format(parent_directory
 app.mount("/files", StaticFiles(directory=file_utils.output_dir), name="files")
 
 app.include_router(secure_router)
+
+
+
+
+@app.post("/api/generate_local")
+async def route_v1_tts(request: Request):
+    # 获取原始请求体
+    data = await request.json()
+    
+    # 使用 httpx 发送请求到generate_local接口，添加异常处理
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post("http://127.0.0.1:8000/api/generate_local", json=data)
+            response.raise_for_status()  # 检查响应状态，如果4xx或5xx则抛出异常
+    except ReadTimeout:
+        # 如果请求超时，则返回超时异常
+        raise HTTPException(status_code=408, detail="Request to generate_local timed out.")
+    except httpx.HTTPStatusError as exc:
+        # 如果响应状态码指示错误，返回从服务器接收的错误
+        detail = f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}"
+        raise HTTPException(status_code=exc.response.status_code, detail=detail)
+    except Exception as exc:
+        # 其他错误处理
+        raise HTTPException(status_code=500, detail=str(exc))
+    
+    # 返回从generate_local接口得到的响应
+    return response.json()
+
+
+
+@app.get("/api/ready")
+async def route_tts_ready():
+    try:
+        # 使用 httpx 发送请求到 ready 接口，设置超时
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get("http://127.0.0.1:8000/api/ready")
+            response.raise_for_status()  # 检查响应状态，如果4xx或5xx则抛出异常
+    except ReadTimeout:
+        # 如果请求超时，则返回超时异常
+        raise HTTPException(status_code=408, detail="Request to ready endpoint timed out.")
+    except httpx.HTTPStatusError as exc:
+        # 如果响应状态码指示错误，返回从服务器接收的错误
+        detail = f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}"
+        raise HTTPException(status_code=exc.response.status_code, detail=detail)
+    except Exception as exc:
+        # 其他错误处理
+        raise HTTPException(status_code=500, detail=str(exc))
+    
+    # 返回从 ready 接口得到的响应
+    return Response(content=response.text, media_type="text/plain")
+
+
+
+@app.get("/audio/{filename}")
+async def route_tts_audio(filename: str):
+    try:
+        # 使用 httpx 发送请求到 audio 接口，设置超时
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.get(f"http://127.0.0.1:8000/audio/{filename}")
+            response.raise_for_status()  # 检查响应状态，如果4xx或5xx则抛出异常
+    except ReadTimeout:
+        # 如果请求超时，则返回超时异常
+        raise HTTPException(status_code=408, detail="Request to audio endpoint timed out.")
+    except httpx.HTTPStatusError as exc:
+        # 如果响应状态码指示错误，返回从服务器接收的错误
+        detail = f"HTTP error occurred: {exc.response.status_code} - {exc.response.text}"
+        raise HTTPException(status_code=exc.response.status_code, detail=detail)
+    except Exception as exc:
+        # 其他错误处理
+        raise HTTPException(status_code=500, detail=str(exc))
+    
+    # 返回从 audio 接口得到的文件响应
+    return Response(content=response.content, media_type=response.headers["content-type"])
+
 
 def start_app(args):
     file_utils.static_serve_base_url = args.base_url + "/files/"
