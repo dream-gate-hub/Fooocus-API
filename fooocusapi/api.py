@@ -236,6 +236,8 @@ def get_task_type(req: Text2ImgRequest) -> TaskType:
     else:
         return TaskType.text_2_img
 
+import subprocess
+import json
 
 def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2req: bool = False) -> Response | AsyncJobResponse | List[GeneratedImageResult]:  
     #priority =True :the task will be done first   step2req =True : for 2 step task's first step used for waiting 
@@ -288,7 +290,39 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
     if streaming_output:
         return generate_streaming_output(results)
     else:
-        return generate_image_result_output(results, req.require_base64, req.image_style)
+        
+        python_exec = "/root/miniconda3/envs/opennsfw/bin/python3.7"
+        script_path = "/root/open_nsfw/classify_nsfw.py"
+        image_path = f"{file_utils.output_dir}/{results[0].im}"
+        nsfw = False
+
+        print("image_path: ", image_path)
+        
+
+        try:
+            # Execute the script using the desired Python interpreter
+            result = subprocess.run(
+                [python_exec, script_path, image_path],  # Pass the image path directly
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+
+            # Parse the output JSON
+            output = result.stdout.decode()
+            classification_result = json.loads(output)
+
+            # Directly extract and print the NSFW score
+            score = list(classification_result.values())[0]
+            if score > 0.8:
+                nsfw = True
+            
+            print(f"NSFW score: {score}")
+        
+        except subprocess.CalledProcessError as e:
+            print(f"Error executing script: {e.stderr.decode()}")
+
+        return generate_image_result_output(results, req.require_base64, req.image_style, nsfw)
 
 
 def stop_worker():
