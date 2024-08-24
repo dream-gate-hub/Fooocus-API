@@ -390,6 +390,7 @@ class GeneratedImageResult(BaseModel):
     url: str | None = Field(description="Image file static serve url, or null if finishReasen is not 'SUCCESS'")
     seed: str = Field(description="The seed associated with this image")
     image_style: int = -1
+    nsfw: bool = False
     finish_reason: GenerationFinishReason
 
 
