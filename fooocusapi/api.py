@@ -294,11 +294,10 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
         python_exec = "/root/miniconda3/envs/opennsfw/bin/python3.7"
         script_path = "/root/open_nsfw/classify_nsfw.py"
         image_path = f"{file_utils.output_dir}/{results[0].im}"
-        nsfw = False
+        nsfw = 0.0
 
         print("image_path: ", image_path)
         
-
         try:
             # Execute the script using the desired Python interpreter
             result = subprocess.run(
@@ -313,11 +312,9 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
             classification_result = json.loads(output)
 
             # Directly extract and print the NSFW score
-            score = list(classification_result.values())[0]
-            if score > 0.8:
-                nsfw = True
+            nsfw = list(classification_result.values())[0]
             
-            print(f"NSFW score: {score}")
+            print(f"NSFW score: {nsfw}")
         
         except subprocess.CalledProcessError as e:
             print(f"Error executing script: {e.stderr.decode()}")
