@@ -239,6 +239,9 @@ def get_task_type(req: Text2ImgRequest) -> TaskType:
 import subprocess
 import json
 
+from transformers import pipeline
+pipe = pipeline("image-classification", model="/root/nsfw_image_detection")
+
 def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2req: bool = False) -> Response | AsyncJobResponse | List[GeneratedImageResult]:  
     #priority =True :the task will be done first   step2req =True : for 2 step task's first step used for waiting 
     if accept == 'image/png':
@@ -290,34 +293,18 @@ def call_worker(req: Text2ImgRequest, accept: str, priority: bool = False,step2r
     if streaming_output:
         return generate_streaming_output(results)
     else:
-        
-        python_exec = "/root/miniconda3/envs/opennsfw/bin/python3.7"
-        script_path = "/root/open_nsfw/classify_nsfw.py"
         image_path = f"{file_utils.output_dir}/{results[0].im}"
-        nsfw = 0.0
+
+        start_time = time.time()
+
+        raw_image = Image.open(image_path)
+        results_img = pipe(raw_image)
+        nsfw = next((item['score'] for item in results_img if item['label'] == 'nsfw'), None)
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
 
         print("image_path: ", image_path)
-        
-        try:
-            # Execute the script using the desired Python interpreter
-            result = subprocess.run(
-                [python_exec, script_path, image_path],  # Pass the image path directly
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
-            )
-
-            # Parse the output JSON
-            output = result.stdout.decode()
-            classification_result = json.loads(output)
-
-            # Directly extract and print the NSFW score
-            nsfw = list(classification_result.values())[0]
-            
-            print(f"NSFW score: {nsfw}")
-        
-        except subprocess.CalledProcessError as e:
-            print(f"Error executing script: {e.stderr.decode()}")
 
         return generate_image_result_output(results, req.require_base64, req.image_style, nsfw)
 
