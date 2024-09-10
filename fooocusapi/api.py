@@ -86,7 +86,7 @@ class ImageStyle():
 
 image_styles = {
 
-    0:ImageStyle("animagineXL_v20.safetensors", use_default=True),
+    # 0:ImageStyle("animagineXL_v20.safetensors", use_default=True),
     1:ImageStyle("envyStarlightXL01Lightning_v10.safetensors", sdxl_fast = True, cfg = 5, steps = 8, sampler_name = "euler_ancestral"),
     2:ImageStyle("AnythingXL_xl.safetensors", use_default=True),
     3:ImageStyle("sdxlYamersAnime_stageAnima.safetensors", use_default=True), # lin
